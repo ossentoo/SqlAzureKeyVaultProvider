@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlAzureKeyVaultProvider", "SqlAzureKeyVaultProvider\SqlAzureKeyVaultProvider.csproj", "{0DA6AF16-3607-41A5-BACE-300E94726ACB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlKeyVaultSampleApp", "SqlKeyVaultSampleApp\SqlKeyVaultSampleApp.csproj", "{7E308475-0BAB-42F9-9C59-47199CDB0F25}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0DA6AF16-3607-41A5-BACE-300E94726ACB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DA6AF16-3607-41A5-BACE-300E94726ACB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DA6AF16-3607-41A5-BACE-300E94726ACB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DA6AF16-3607-41A5-BACE-300E94726ACB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E308475-0BAB-42F9-9C59-47199CDB0F25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E308475-0BAB-42F9-9C59-47199CDB0F25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E308475-0BAB-42F9-9C59-47199CDB0F25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E308475-0BAB-42F9-9C59-47199CDB0F25}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
