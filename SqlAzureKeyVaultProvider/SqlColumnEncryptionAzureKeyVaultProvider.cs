@@ -38,7 +38,7 @@ namespace SqlAzureKeyVaultProvider
         /// <summary>
         /// Algorithm version
         /// </summary>
-        private readonly byte[] firstVersion = new byte[] { 0x01 };
+        private readonly byte[] firstVersion = { 0x01 };
 
         /// <summary>
         /// Constructor that takes a callback function to authenticate to AAD. This is used by KeyVaultClient at runtime 
@@ -58,10 +58,9 @@ namespace SqlAzureKeyVaultProvider
         /// <summary>
         /// Azure Key Vault Client
         /// </summary>
-        public KeyVaultClient KeyVaultClient
+        private KeyVaultClient KeyVaultClient
         {
             get;
-            private set;
         }
 
         /// <summary>
@@ -111,12 +110,12 @@ namespace SqlAzureKeyVaultProvider
 
             // Get key path length
             int currentIndex = firstVersion.Length;
-            UInt16 keyPathLength = BitConverter.ToUInt16(encryptedColumnEncryptionKey, currentIndex);
-            currentIndex += sizeof(UInt16);
+            var keyPathLength = BitConverter.ToUInt16(encryptedColumnEncryptionKey, currentIndex);
+            currentIndex += sizeof(ushort);
 
             // Get ciphertext length
-            UInt16 cipherTextLength = BitConverter.ToUInt16(encryptedColumnEncryptionKey, currentIndex);
-            currentIndex += sizeof(UInt16);
+            var cipherTextLength = BitConverter.ToUInt16(encryptedColumnEncryptionKey, currentIndex);
+            currentIndex += sizeof(ushort);
 
             // Skip KeyPath
             // KeyPath exists only for troubleshooting purposes and doesnt need validation.
@@ -125,7 +124,7 @@ namespace SqlAzureKeyVaultProvider
             // validate the ciphertext length
             if (cipherTextLength != keySizeInBytes)
             {
-                throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, @"The specified encrypted column encryption key's ciphertext length: {0} does not match the ciphertext length: {1} when using column master key (Azure Key Vault key) in '{2}'. The encrypted column encryption key may be corrupt, or the specified Azure Key Vault key path may be incorrect.",
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, @"The specified encrypted column encryption key's ciphertext length: {0} does not match the ciphertext length: {1} when using column master key (Azure Key Vault key) in '{2}'. The encrypted column encryption key may be corrupt, or the specified Azure Key Vault key path may be incorrect.",
                                                             cipherTextLength,
                                                             keySizeInBytes,
                                                             masterKeyPath),
@@ -136,7 +135,7 @@ namespace SqlAzureKeyVaultProvider
             int signatureLength = encryptedColumnEncryptionKey.Length - currentIndex - cipherTextLength;
             if (signatureLength != keySizeInBytes)
             {
-                throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, @"The specified encrypted column encryption key's signature length: {0} does not match the signature length: {1} when using column master key (Azure Key Vault key) in '{2}'. The encrypted column encryption key may be corrupt, or the specified Azure Key Vault key path may be incorrect.",
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, @"The specified encrypted column encryption key's signature length: {0} does not match the signature length: {1} when using column master key (Azure Key Vault key) in '{2}'. The encrypted column encryption key may be corrupt, or the specified Azure Key Vault key path may be incorrect.",
                                                             signatureLength,
                                                             keySizeInBytes,
                                                             masterKeyPath),
@@ -144,17 +143,17 @@ namespace SqlAzureKeyVaultProvider
             }
 
             // Get ciphertext
-            byte[] cipherText = new byte[cipherTextLength];
+            var cipherText = new byte[cipherTextLength];
             Buffer.BlockCopy(encryptedColumnEncryptionKey, currentIndex, cipherText, 0, cipherTextLength);
             currentIndex += cipherTextLength;
 
             // Get signature
-            byte[] signature = new byte[signatureLength];
+            var signature = new byte[signatureLength];
             Buffer.BlockCopy(encryptedColumnEncryptionKey, currentIndex, signature, 0, signature.Length);
 
             // Compute the hash to validate the signature
             byte[] hash;
-            using (SHA256Cng sha256 = new SHA256Cng())
+            using (var sha256 = new SHA256Cng())
             {
                 sha256.TransformFinalBlock(encryptedColumnEncryptionKey, 0, encryptedColumnEncryptionKey.Length - signature.Length);
                 hash = sha256.Hash;
@@ -168,7 +167,7 @@ namespace SqlAzureKeyVaultProvider
             // Validate the signature
             if (!AzureKeyVaultVerifySignature(hash, signature, masterKeyPath))
             {
-                throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, @"The specified encrypted column encryption key signature does not match the signature computed with the column master key (Asymmetric key in Azure Key Vault) in '{0}'. The encrypted column encryption key may be corrupt, or the specified path may be incorrect.",
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, @"The specified encrypted column encryption key signature does not match the signature computed with the column master key (Asymmetric key in Azure Key Vault) in '{0}'. The encrypted column encryption key may be corrupt, or the specified path may be incorrect.",
                                                             masterKeyPath),
                                             Constants.AeParamEncryptedCek);
             }
@@ -188,7 +187,7 @@ namespace SqlAzureKeyVaultProvider
         public override byte[] EncryptColumnEncryptionKey(string masterKeyPath, string encryptionAlgorithm, byte[] columnEncryptionKey)
         {
             // Validate the input parameters
-            ValidateNonEmptyAKVPath(masterKeyPath, isSystemOp: false);
+            ValidateNonEmptyAKVPath(masterKeyPath, false);
 
             if (null == columnEncryptionKey)
             {
@@ -201,17 +200,13 @@ namespace SqlAzureKeyVaultProvider
             }
 
             // Validate encryptionAlgorithm
-            ValidateEncryptionAlgorithm(ref encryptionAlgorithm, isSystemOp: false);
+            ValidateEncryptionAlgorithm(ref encryptionAlgorithm, false);
 
             // Validate whether the key is RSA one or not and then get the key size
             int keySizeInBytes = GetAkvKeySize(masterKeyPath);
 
-            // Construct the encryptedColumnEncryptionKey
-            // Format is 
-            //          version + keyPathLength + ciphertextLength + ciphertext + keyPath + signature
-            //
             // We currently only support one version
-            var version = new byte[] { firstVersion[0] };
+            var version = new[] { firstVersion[0] };
 
             // Get the Unicode encoded bytes of cultureinvariant lower case masterKeyPath
             var masterKeyPathBytes = Encoding.Unicode.GetBytes(masterKeyPath.ToLowerInvariant());
@@ -310,7 +305,7 @@ namespace SqlAzureKeyVaultProvider
                 encryptionAlgorithm = JsonWebKeyEncryptionAlgorithm.RSAOAEP;
             }
 
-            if (string.Equals(encryptionAlgorithm, JsonWebKeyEncryptionAlgorithm.RSAOAEP, StringComparison.OrdinalIgnoreCase) != true)
+            if (!string.Equals(encryptionAlgorithm, JsonWebKeyEncryptionAlgorithm.RSAOAEP, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, @"Invalid key encryption algorithm specified: '{0}'. Expected value: '{1}'.",
                                                             encryptionAlgorithm,
@@ -330,37 +325,29 @@ namespace SqlAzureKeyVaultProvider
             {
                 string errorMessage = null == masterKeyPath
                                       ? @"Azure Key Vault key path cannot be null."
-                                      : String.Format(CultureInfo.InvariantCulture, @"Invalid Azure Key Vault key path specified: '{0}'.", masterKeyPath);
+                                      : string.Format(CultureInfo.InvariantCulture, @"Invalid Azure Key Vault key path specified: '{0}'.", masterKeyPath);
 
                 if (isSystemOp)
                 {
                     throw new ArgumentNullException(Constants.AeParamMasterKeyPath, "Internal error.  " + errorMessage);
                 }
-                else
-                {
-                    throw new ArgumentException(errorMessage, Constants.AeParamMasterKeyPath);
-                }
+
+                throw new ArgumentException(errorMessage, Constants.AeParamMasterKeyPath);
 
             }
-            else
-            {
-                if (!Uri.TryCreate(masterKeyPath, UriKind.Absolute, out var parsedUri))
-                {
-                    // Return an error indicating that the AKV url is invalid.
-                    throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, @"Invalid url specified: '{0}'.", masterKeyPath), Constants.AeParamMasterKeyPath);
-                }
-                else
-                {
-                    // A valid URI.
-                    // Check if it is pointing to AKV.
-                    if (!parsedUri.Host.ToLowerInvariant().EndsWith(Constants.AzureKeyVaultDomainName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Return an error indicating that the AKV url is invalid.
-                        throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, @"Invalid Azure Key Vault key path specified: '{0}'.", masterKeyPath), Constants.AeParamMasterKeyPath);
-                    }
 
-                    return;
-                }
+            if (!Uri.TryCreate(masterKeyPath, UriKind.Absolute, out var parsedUri))
+            {
+                // Return an error indicating that the AKV url is invalid.
+                throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, @"Invalid url specified: '{0}'.", masterKeyPath), Constants.AeParamMasterKeyPath);
+            }
+
+            // A valid URI.
+            // Check if it is pointing to AKV.
+            if (!parsedUri.Host.ToLowerInvariant().EndsWith(Constants.AzureKeyVaultDomainName, StringComparison.OrdinalIgnoreCase))
+            {
+                // Return an error indicating that the AKV url is invalid.
+                throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, @"Invalid Azure Key Vault key path specified: '{0}'.", masterKeyPath), Constants.AeParamMasterKeyPath);
             }
         }
 
